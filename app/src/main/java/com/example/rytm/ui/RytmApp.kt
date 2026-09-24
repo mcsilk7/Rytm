@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -35,13 +38,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -50,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.launch
 import com.example.rytm.data.Task
 import com.example.rytm.data.WeekPlan
 import java.time.DayOfWeek
@@ -95,9 +109,12 @@ fun RytmApp(state: RytmUiState, viewModel: RytmViewModel) {
     var showNewTask by remember { mutableStateOf(false) }
     var planBeingEdited by remember { mutableStateOf<WeekPlan?>(null) }
     var showNewPlan by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = Paper,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
                 listOf(
@@ -149,7 +166,17 @@ fun RytmApp(state: RytmUiState, viewModel: RytmViewModel) {
             defaultDay = state.selectedDate.dayOfWeek.value,
             onDismiss = { showNewTask = false },
             onSave = { title, day, start, end, color, note ->
-                viewModel.createTask(title, day, start, end, color, note)
+                viewModel.createTask(title, day, start, end, color, note) { createdTask ->
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Zadanie dodane",
+                            actionLabel = "Cofnij"
+                        )
+                        if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                            viewModel.deleteTask(createdTask)
+                        }
+                    }
+                }
                 showNewTask = false
             }
         )
@@ -502,34 +529,120 @@ private fun TaskEditorDialog(
     var start by remember(task) { mutableStateOf(task?.startTime?.format(timeFormatter) ?: "09:00") }
     var end by remember(task) { mutableStateOf(task?.endTime?.format(timeFormatter) ?: "10:00") }
     var color by remember(task) { mutableStateOf(task?.colorHex ?: "#1E7560") }
+    var titleError by remember(task) { mutableStateOf(false) }
+    var timeError by remember(task) { mutableStateOf<String?>(null) }
+    var editingTime by remember { mutableStateOf<TimeField?>(null) }
+    var selectedDuration by remember(task) {
+        mutableStateOf(
+            task?.let { durationMinutes(it.startTime, it.endTime) }
+        )
+    }
+    val titleFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        if (task == null) titleFocusRequester.requestFocus()
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (task == null) "Nowe zadanie" else "Edycja zadania") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                TextField(value = title, onValueChange = { title = it }, label = { Text("Tytuł") }, singleLine = true)
+                TextField(
+                    value = title,
+                    onValueChange = {
+                        title = it
+                        titleError = false
+                    },
+                    label = { Text("Co chcesz zrobić?") },
+                    placeholder = { Text("Np. Nauka angielskiego") },
+                    singleLine = true,
+                    isError = titleError,
+                    supportingText = { if (titleError) Text("Wpisz tytuł zadania") },
+                    modifier = Modifier.focusRequester(titleFocusRequester)
+                )
                 Text("Dzień tygodnia", color = Muted, fontSize = 14.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     listOf("Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd").forEachIndexed { index, label ->
-                        TextButton(onClick = { day = index + 1 }) {
-                            Text(label, color = if (day == index + 1) Green else Muted, fontSize = 13.sp)
-                        }
+                        FilterChip(
+                            selected = day == index + 1,
+                            onClick = { day = index + 1 },
+                            label = { Text(label) }
+                        )
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextField(value = start, onValueChange = { start = it }, label = { Text("Od") }, singleLine = true, modifier = Modifier.weight(1f))
-                    TextField(value = end, onValueChange = { end = it }, label = { Text("Do") }, singleLine = true, modifier = Modifier.weight(1f))
+                    OutlinedButton(
+                        onClick = { editingTime = TimeField.START },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text("Od", color = Muted, fontSize = 11.sp)
+                            Text(start, color = Ink, fontSize = 17.sp)
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            selectedDuration = null
+                            editingTime = TimeField.END
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text("Do", color = Muted, fontSize = 11.sp)
+                            Text(end, color = Ink, fontSize = 17.sp)
+                        }
+                    }
                 }
-                TextField(value = note, onValueChange = { note = it }, label = { Text("Notatka") }, singleLine = true)
+                Text("Czas trwania", color = Muted, fontSize = 14.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(30, 45, 60).forEach { minutes ->
+                        FilterChip(
+                            selected = selectedDuration == minutes,
+                            onClick = {
+                                selectedDuration = minutes
+                                end = LocalTime.parse(start)
+                                    .plusMinutes(minutes.toLong())
+                                    .format(timeFormatter)
+                                timeError = null
+                            },
+                            label = { Text("$minutes min") }
+                        )
+                    }
+                    if (selectedDuration == null) {
+                        FilterChip(
+                            selected = true,
+                            onClick = { },
+                            label = { Text("Własna") }
+                        )
+                    }
+                }
+                if (timeError != null) {
+                    Text(timeError!!, color = Orange, fontSize = 12.sp)
+                }
+                TextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Notatka (opcjonalnie)") },
+                    minLines = 2,
+                    maxLines = 4
+                )
                 ColorChoices(color) { color = it }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val startTime = runCatching { LocalTime.parse(start) }.getOrDefault(LocalTime.of(9, 0))
-                val endTime = runCatching { LocalTime.parse(end) }.getOrDefault(startTime.plusHours(1))
-                onSave(title, day, startTime, endTime, color, note)
-            }, enabled = title.isNotBlank()) { Text("Zapisz", color = Green) }
+                val startTime = LocalTime.parse(start)
+                val endTime = LocalTime.parse(end)
+                when {
+                    title.isBlank() -> titleError = true
+                    !endTime.isAfter(startTime) -> timeError = "Godzina zakończenia musi być późniejsza niż rozpoczęcia"
+                    else -> onSave(title.trim(), day, startTime, endTime, color, note.trim())
+                }
+            }) { Text("Zapisz", color = Green) }
         },
         dismissButton = {
             Row {
@@ -538,6 +651,57 @@ private fun TaskEditorDialog(
             }
         }
     )
+
+    editingTime?.let { field ->
+        key(field) {
+            val current = LocalTime.parse(if (field == TimeField.START) start else end)
+            val pickerState = rememberTimePickerState(current.hour, current.minute, is24Hour = true)
+            Dialog(
+                onDismissRequest = { editingTime = null },
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.White
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Wybierz godzinę", color = Ink, fontWeight = FontWeight.Bold)
+                        TimePicker(state = pickerState)
+                        Row {
+                            TextButton(onClick = { editingTime = null }) {
+                                Text("Anuluj", color = Muted)
+                            }
+                            TextButton(onClick = {
+                                val selected = LocalTime.of(pickerState.hour, pickerState.minute)
+                                if (field == TimeField.START) {
+                                    start = selected.format(timeFormatter)
+                                    selectedDuration?.let { minutes ->
+                                        end = selected.plusMinutes(minutes.toLong()).format(timeFormatter)
+                                    }
+                                } else {
+                                    end = selected.format(timeFormatter)
+                                    selectedDuration = null
+                                }
+                                timeError = null
+                                editingTime = null
+                            }) {
+                                Text("OK", color = Green)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private enum class TimeField { START, END }
+
+private fun durationMinutes(start: LocalTime, end: LocalTime): Int? {
+    val minutes = java.time.Duration.between(start, end).toMinutes().toInt()
+    return minutes.takeIf { it == 30 || it == 45 || it == 60 }
 }
 
 @Composable

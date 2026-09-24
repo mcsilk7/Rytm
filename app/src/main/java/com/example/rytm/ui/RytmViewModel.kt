@@ -98,13 +98,13 @@ class RytmViewModel(private val repository: RytmRepository) : ViewModel() {
         startTime: LocalTime,
         endTime: LocalTime,
         colorHex: String,
-        note: String = ""
+        note: String = "",
+        onCreated: (Task) -> Unit = {}
     ) {
         val plan = uiState.value.activePlan ?: return
         if (title.isBlank()) return
         viewModelScope.launch {
-            repository.createTask(
-                Task(
+            val task = Task(
                     planId = plan.id,
                     title = title,
                     dayOfWeek = dayOfWeek,
@@ -113,7 +113,8 @@ class RytmViewModel(private val repository: RytmRepository) : ViewModel() {
                     colorHex = colorHex,
                     note = note
                 )
-            )
+            val id = repository.createTask(task)
+            onCreated(task.copy(id = id))
         }
     }
 
