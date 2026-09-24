@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="6dp"
+    android:padding="10dp" android:gravity="center_vertical" android:background="@drawable/bg_card"
+    android:orientation="horizontal">
+    <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" android:buttonTint="@color/green" />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+        <TextView style="@style/TaskTitle" android:text="Poranna rozgrzewka" />
+        <TextView style="@style/TaskTime" android:text="07:00 – 07:30" />
+    </LinearLayout>
+    <View android:layout_width="7dp" android:layout_height="7dp" android:background="@drawable/dot_orange" />
+</LinearLayout>

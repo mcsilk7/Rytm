@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView style="@style/PageTitle" android:text="Plany" />
+    <Button style="@style/GreenButton" android:text="Nowy plan" android:layout_gravity="end" />
+    <include layout="@layout/item_plan" android:layout_marginTop="10dp" />
+    <include layout="@layout/item_plan" />
+    <include layout="@layout/item_plan" />
+    <TextView style="@style/Overline" android:text="PLAN NA KOLEJNE TYGODNIE" android:layout_marginTop="22dp" />
+    <include layout="@layout/item_plan" />
+</LinearLayout>

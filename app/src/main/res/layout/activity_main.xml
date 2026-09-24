@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/charcoal"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="44dp"
+        android:background="@drawable/bg_paper">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:padding="11dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <include
+                    android:id="@+id/today_view"
+                    layout="@layout/view_today" />
+
+                <include
+                    android:id="@+id/week_view"
+                    layout="@layout/view_week"
+                    android:visibility="gone" />
+
+                <include
+                    android:id="@+id/plans_view"
+                    layout="@layout/view_plans"
+                    android:visibility="gone" />
+
+                <include
+                    android:id="@+id/edit_view"
+                    layout="@layout/view_edit_task"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </ScrollView>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@android:color/white"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/nav_today"
+            style="@style/NavItem"
+            android:text="✓\nDziś"
+            android:textColor="@color/green" />
+        <TextView
+            android:id="@+id/nav_week"
+            style="@style/NavItem"
+            android:text="▣\nTydzień" />
+        <TextView
+            android:id="@+id/nav_plans"
+            style="@style/NavItem"
+            android:text="≡\nPlany" />
+    </LinearLayout>
+</LinearLayout>

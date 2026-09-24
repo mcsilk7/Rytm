@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView style="@style/Overline" android:text="21 – 27 września · Plan: Szkoła" />
+    <TextView style="@style/PageTitle" android:text="Tydzień" />
+    <TextView android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center" android:text="Pon   Wt   Śr   Czw   Pt   Sob   Nd" android:textSize="10sp" android:textColor="@color/ink" android:background="@drawable/bg_card" />
+    <include layout="@layout/item_task_done" android:layout_marginTop="12dp" />
+    <include layout="@layout/item_task" />
+    <include layout="@layout/item_task" />
+    <include layout="@layout/item_task" />
+    <Button style="@style/OutlineButton" android:text="Zmień plan na ten tydzień" android:layout_marginTop="10dp" />
+</LinearLayout>
