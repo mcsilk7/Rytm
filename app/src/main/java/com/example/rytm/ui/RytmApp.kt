@@ -40,6 +40,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -170,7 +171,8 @@ fun RytmApp(state: RytmUiState, viewModel: RytmViewModel) {
                     scope.launch {
                         val result = snackbarHostState.showSnackbar(
                             message = "Zadanie dodane",
-                            actionLabel = "Cofnij"
+                            actionLabel = "Cofnij",
+                            duration = SnackbarDuration.Short
                         )
                         if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                             viewModel.deleteTask(createdTask)
@@ -610,13 +612,6 @@ private fun TaskEditorDialog(
                                 timeError = null
                             },
                             label = { Text("$minutes min") }
-                        )
-                    }
-                    if (selectedDuration == null) {
-                        FilterChip(
-                            selected = true,
-                            onClick = { },
-                            label = { Text("Własna") }
                         )
                     }
                 }
